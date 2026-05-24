@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Local environments
+.venv/
+.env
+
+# Editor / OS noise
+.DS_Store
+.idea/
+
+# LaTeX build products; keep source PDF and figures.
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+
+# Simulator debug logs can be very large. Keep summaries, reports, and replay traces.
+runs/**/*_decisions.jsonl
