@@ -12,6 +12,8 @@ experiment summaries, replay traces, and tests used to explore that question.
 It is meant to be easy to read cold: start with this README, skim the paper,
 run the smoke tests, then reproduce or extend the trace-driven experiments.
 
+📄 **Read the paper:** [`paper/yieldos_lite_resource_governance_paper.pdf`](paper/yieldos_lite_resource_governance_paper.pdf)
+
 ## What This Is
 
 YieldOS-Lite is a dependency-free trace simulator for LLM inference resource
