@@ -1,8 +1,97 @@
 # YieldOS-Lite MVP Simulator
 
-This repository contains a dependency-free Phase 1 implementation of the
-YieldOS research draft: a trace-driven simulator for LLM inference resource
-governance.
+YieldOS-Lite is a Phase 1 research artifact for asking one question:
+
+> When LLM inference workloads become heterogeneous, does a slow-path
+> resource-governance control plane improve SLO-valid work over mechanistic
+> schedulers such as continuous batching, chunked prefill, and prefill/decode
+> disaggregation?
+
+This repository contains the simulator, paper draft, generated figures,
+experiment summaries, replay traces, and tests used to explore that question.
+It is meant to be easy to read cold: start with this README, skim the paper,
+run the smoke tests, then reproduce or extend the trace-driven experiments.
+
+## What This Is
+
+YieldOS-Lite is a dependency-free trace simulator for LLM inference resource
+governance. It models control-plane choices: SLO urgency, KV-cache value,
+shape forecasts, policy cadence, and admission/dispatch decisions.
+
+It is not a production serving engine. It does not implement CUDA kernels,
+PagedAttention, TensorRT-LLM, or a real vLLM scheduler. The goal is to test
+whether governance policies are promising before integrating with real engines.
+
+The current takeaway is:
+
+> YieldOS-Lite is not a better queue; it is a better response to workload
+> heterogeneity.
+
+## Where To Start
+
+| If you want to... | Start here |
+|---|---|
+| Understand the research claim | [`paper/yieldos_lite_resource_governance_paper.pdf`](paper/yieldos_lite_resource_governance_paper.pdf) |
+| Inspect the LaTeX source | [`paper/yieldos_lite_resource_governance_paper.tex`](paper/yieldos_lite_resource_governance_paper.tex) |
+| Run the simulator | See [Quick Start](#quick-start) |
+| Understand trace replay | [`docs/trace_format.md`](docs/trace_format.md) |
+| See evaluation structure | [`docs/evaluation_outline.md`](docs/evaluation_outline.md) |
+| Inspect headline results | `runs/*/summary.json`, `runs/*/summary.csv`, and `runs/*/report.md` |
+| Modify policies | [`src/yieldos/policies.py`](src/yieldos/policies.py) |
+| Modify the simulator loop | [`src/yieldos/simulator.py`](src/yieldos/simulator.py) |
+| Regenerate paper figures | [`scripts/generate_paper_figures.py`](scripts/generate_paper_figures.py) |
+
+## Repository Map
+
+```text
+README.md                         repo orientation and result summary
+pyproject.toml                     package metadata
+src/yieldos/                       simulator, policies, workloads, metrics
+tests/                            smoke tests
+docs/                             trace schema and evaluation outline
+paper/                            LaTeX paper, compiled PDF, generated figures
+scripts/generate_paper_figures.py figure generation from run summaries
+runs/                             compact experiment outputs and replay traces
+```
+
+The committed `runs/` files intentionally include summaries, reports, and small
+replay traces. Large per-policy decision logs (`*_decisions.jsonl`) are ignored
+because they can make the working directory several gigabytes.
+
+## Core Concepts
+
+- **Governed goodput:** SLO-valid completed output tokens per simulated
+  GPU-second, net of control-plane overhead.
+- **SLO Notary:** predictive SLO governance that turns future breach risk into
+  present scheduling pressure.
+- **KV Treasury:** value-aware KV accounting that scores cache residency by
+  expected utility, not raw hit count alone.
+- **Shape forecast:** advisory request-shape evidence. It is not treated as a
+  validated hard-routing authority.
+- **Policy snapshot:** slow-path governance output consumed by a simple fast
+  dispatch loop.
+- **Obligation Heterogeneity Index (OHI):** coarse diagnostic for when
+  governance should help.
+
+## What To Believe
+
+The evidence currently supports:
+
+1. Resource governance is a promising research direction for heterogeneous LLM
+   inference workloads.
+2. YieldOS-Lite is runnable today as a simulator and trace-replay scaffold.
+3. Predictive SLO governance is the strongest validated primitive in this MVP.
+4. Value-aware KV accounting is promising under pressure, especially when
+   evaluated by value preserved rather than raw hit rate.
+5. Shape classification should remain advisory until better calibrated.
+
+The evidence does not yet claim:
+
+1. Production readiness.
+2. CUDA-level serving speedup.
+3. Direct replacement for vLLM, TensorRT-LLM, Sarathi-Serve, or DistServe.
+4. Production GPU utilization gains on real deployment traces.
+5. Universal dominance over disaggregated serving.
 
 It implements:
 
@@ -42,18 +131,45 @@ The current evidence does not yet claim:
 
 ## Quick Start
 
+Use Python 3.11+.
+
 ```bash
-python3 -m yieldos.cli run --requests 800 --seed 7 --out runs/demo
-python3 -m yieldos.cli ablate --requests 800 --seed 7 --out runs/ablations
-python3 -m yieldos.cli workload-suite --requests 800 --seed 41 --out runs/workload_suite
-python3 -m yieldos.cli replay --trace runs/workload_suite/traces/chat_heavy.csv --out runs/replay_chat
-PYTHONPATH=src python3 -m unittest discover -s tests
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+Run a baseline comparison:
+
+```bash
+python -m yieldos.cli run --requests 800 --seed 7 --out runs/demo
+```
+
+Run the main experiment families:
+
+```bash
+python -m yieldos.cli ablate --requests 800 --seed 7 --out runs/ablations
+python -m yieldos.cli workload-suite --requests 800 --seed 41 --out runs/workload_suite
+python -m yieldos.cli replay --trace runs/workload_suite/traces/chat_heavy.csv --out runs/replay_chat
+```
+
+Run tests:
+
+```bash
+python -m unittest discover -s tests
 ```
 
 The commands write `summary.csv`, `summary.json`, per-policy decision logs, and
 a human-readable `report.md`.
 
 Trace replay format is documented in `docs/trace_format.md`.
+
+Figure regeneration requires `matplotlib`:
+
+```bash
+python -m pip install matplotlib
+python scripts/generate_paper_figures.py
+```
 
 ## Completed Runs
 
