@@ -1,5 +1,7 @@
 # YieldOS-Lite MVP Simulator
 
+![YieldOS-Lite: When Scheduling Is Not Enough — Resource Governance for Heterogeneous LLM Inference](assets/yieldos_overview.png)
+
 YieldOS-Lite is a Phase 1 research artifact for asking one question:
 
 > When LLM inference workloads become heterogeneous, does a slow-path
